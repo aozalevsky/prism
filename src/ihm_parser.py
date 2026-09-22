@@ -288,9 +288,15 @@ def parse_ihm_models( args ):
 
 
 def get_all_attributes_ihm(models) -> list:
-	"""Extract information from models in an ihm.model.ModelGroup"""
+	"""Extract information from models in an ihm.model.ModelGroup.
+
+	Returns [coords, radius, mass, ps_names, bead_ids]. bead_ids has one
+	(asym_id, seq_id_begin, seq_id_end, kind) tuple per bead of the first
+	model, kind being "sphere" or "atom". ps_names carries the same identity
+	as "<asym_id>:<seq_id_begin>-<seq_id_end>", once per bead per model.
+	"""
     # Get the x, y, z coords and radius for all models.
-	coords, radius, mass, ps_names = [], [], [], []
+	coords, radius, mass, ps_names, bead_ids = [], [], [], [], []
 	avg_mass = 110
 	avg_radius = 2.73
 
@@ -307,19 +313,28 @@ def get_all_attributes_ihm(models) -> list:
 			if isinstance(obj, ihm.model.Sphere) or (isinstance(obj, ihm.model.Atom) and obj.atom_id == 'CA'):
 				num_spheres += 1
 				coords.append( [obj.x, obj.y, obj.z])
+				if isinstance(obj, ihm.model.Sphere):
+					seq_begin, seq_end = obj.seq_id_range
+					kind = 'sphere'
+				else:
+					seq_begin = seq_end = obj.seq_id
+					kind = 'atom'
+				name = f"{obj.asym_unit._id}:{seq_begin}-{seq_end}"
+				if num_models == 1:
+					bead_ids.append( (obj.asym_unit._id, int(seq_begin), int(seq_end), kind) )
 				try:
 					n_res = obj.seq_id_range
 					bead_mass = 110 if n_res[0] == n_res[1] else ( n_res[1] - n_res[0] + 1 )*110
 					mass.append( bead_mass )
 					radius.append( obj.radius )
-					ps_names.append('')
+					ps_names.append( name )
 				# non-IMP entries do not have a radius.
 				except AttributeError:
 					radius.append( avg_radius )
 					mass.append( avg_mass )
-					ps_names.append('')
+					ps_names.append( name )
 
 	coords = np.array( coords ).reshape( num_models, num_spheres, 3 )
 	radius = np.array( radius ).reshape( num_models*num_spheres, 1 )
 	mass = np.array( mass ).reshape( num_models*num_spheres, 1 )
-	return [coords, radius, mass, ps_names]
+	return [coords, radius, mass, ps_names, bead_ids]
