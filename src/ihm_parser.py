@@ -287,13 +287,15 @@ def parse_ihm_models( args ):
 					ihm_set_bfactor( f"output_{ist}_{img}", mmcif, mg )
 
 
-def get_all_attributes_ihm(models) -> list:
+def get_all_attributes_ihm(models, with_ids=False) -> list:
 	"""Extract information from models in an ihm.model.ModelGroup.
 
-	Returns [coords, radius, mass, ps_names, bead_ids]. bead_ids has one
-	(asym_id, seq_id_begin, seq_id_end, kind) tuple per bead of the first
-	model, kind being "sphere" or "atom". ps_names carries the same identity
-	as "<asym_id>:<seq_id_begin>-<seq_id_end>", once per bead per model.
+	Returns [coords, radius, mass, ps_names]; with with_ids=True also
+	bead_ids, one (asym_id, seq_id_begin, seq_id_end, kind) tuple per bead of
+	the first model, kind being "sphere" or "atom". ps_names carries the same
+	identity as "<asym_id>:<seq_id_begin>-<seq_id_end>", once per bead per
+	model. The 4-value default is what IHMValidation releases before 3.3
+	unpack; they clone this branch unpinned.
 	"""
     # Get the x, y, z coords and radius for all models.
 	coords, radius, mass, ps_names, bead_ids = [], [], [], [], []
@@ -337,4 +339,6 @@ def get_all_attributes_ihm(models) -> list:
 	coords = np.array( coords ).reshape( num_models, num_spheres, 3 )
 	radius = np.array( radius ).reshape( num_models*num_spheres, 1 )
 	mass = np.array( mass ).reshape( num_models*num_spheres, 1 )
-	return [coords, radius, mass, ps_names, bead_ids]
+	if with_ids:
+		return [coords, radius, mass, ps_names, bead_ids]
+	return [coords, radius, mass, ps_names]

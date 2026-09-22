@@ -42,7 +42,7 @@ def model0_xyz(group, asym_id, seq_begin, seq_end, kind):
 class TestGetAllAttributesIhm(unittest.TestCase):
 	def check(self, name, kinds):
 		group = model_group(name)
-		coords, radius, mass, ps_names, bead_ids = ihm_parser.get_all_attributes_ihm(group)
+		coords, radius, mass, ps_names, bead_ids = ihm_parser.get_all_attributes_ihm(group, with_ids=True)
 		n_models, n_beads = coords.shape[0], coords.shape[1]
 		self.assertEqual(len(bead_ids), n_beads)
 		self.assertEqual(len(ps_names), n_models * n_beads)
@@ -62,11 +62,15 @@ class TestGetAllAttributesIhm(unittest.TestCase):
 	def test_mixed(self):
 		self.check("mixed_9a1s.cif", {"sphere", "atom"})
 
+	def test_default_keeps_four_values(self):
+		# IHMValidation < 3.3 unpacks exactly four values
+		self.assertEqual(len(ihm_parser.get_all_attributes_ihm(model_group("atomic_9a1s.cif"))), 4)
+
 
 class TestRunPrismIhm(unittest.TestCase):
 	@classmethod
 	def setUpClass(cls):
-		cls.args = ihm_parser.get_all_attributes_ihm(model_group("mixed_9a1s.cif"))
+		cls.args = ihm_parser.get_all_attributes_ihm(model_group("mixed_9a1s.cif"), with_ids=True)
 
 	def test_identity_columns(self):
 		coords, radius, mass, ps_names, bead_ids = self.args
